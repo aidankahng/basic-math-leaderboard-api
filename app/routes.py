@@ -1,3 +1,4 @@
+import math
 from flask import request, render_template
 from flask_cors import cross_origin
 from app.problems.problem_generator import ProblemGenerator
@@ -54,6 +55,8 @@ def quiz(category, amount):
     }
 
 # On completion of a quiz, whether it is complete or not, this will add the quiz to the db
+# and update the points on the user and score of the quiz as well
+# this does the bulk of the updating in terms of keeping track of scores
 @app.route("/quiz/submit", methods=["POST"])
 @token_auth.login_required
 def quiz_submit():
@@ -75,24 +78,27 @@ def quiz_submit():
     new_quiz_id = new_quiz.id
     qs = []
     quiz_score = 0
+    correct_count = 0
+    attempt_count = 0
     for q in data['questions']:
         if q.get('response'):
+            attempt_count += 1
             is_correct = pg.checkAnswer(q['answer'], q['response'])
             if is_correct:
+                correct_count += 1
                 quiz_score += q.get('value', 0)
             new_question = Question(prompt=q['prompt'], answer=q['answer'], response=q['response'], quiz_id=new_quiz_id, correct=is_correct, value=q.get('value', 0))
             qs.append(new_question.to_dict())
     new_quiz.score = quiz_score
+    new_quiz.total_correct = correct_count
+    new_quiz.total_attempted = attempt_count
     new_quiz.save()
     if not current_user.points:
         current_user.points = quiz_score
     else:
-        current_user.points = float(current_user.points) + quiz_score
+        current_user.points = math.round(float(current_user.points) + quiz_score,2)
     current_user.save()
     return {"quiz" : new_quiz.to_dict(), "questions" : qs}, 200
-
-
-
 
 
 ## LOGIN / SIGNUP ROUTES
@@ -128,6 +134,7 @@ def login():
 
 ## ROUTES CONCERNING QUESTIONS
 
+# Sends back all questions in db
 @app.route("/questions")
 def questions():
     select_stmt = db.select(Question)
@@ -151,25 +158,48 @@ def questions_graded():
         grades.append(grade)
     return grades, 200
 
-# This route will grade questions with the corresponding quiz id
-@app.route("/")
+# This route will return the current user's scores by quiz
+@app.route("/my-scores")
+@token_auth.login_required
+def my_scores():
+    current_user = token_auth.current_user()
+    return [[quiz.to_dict(), [question.to_dict() for question in quiz.questions]] for quiz in current_user.quizzes]
+
+# @app.route("/highscores2")
+# def high_scores():
+#     most_points = db.session.execute(db.select(User).order_by(User.points.desc())).scalars().all()
+#     return [{'id' : user.id, 'points' : user.points, 'username': user.username} for user in most_points if user.points]
+
+# @app.route("/most-quizzes")
+# def most_quizzes():
+#     users = db.session.execute(db.select(User).where(User.points != None)).scalars().all()
+#     return sorted([user.to_dict() for user in users], key=(lambda n: len(n['quizzes'])), reverse=True)
+
+@app.route("/highscores")
+def most_correct():
+    users = db.session.execute(db.select(User).where(User.points != None)).scalars().all()
+    user_list = [{'user':user.username, 'totalCorrect': sum([quiz.total_correct or 0 for quiz in user.quizzes]), 'totalQuestions': sum([quiz.total_questions or 0 for quiz in user.quizzes]), 'totalAttempted': sum([quiz.total_attempted or 0 for quiz in user.quizzes]), 'numQuizzes': len(user.quizzes), 'points': user.points} for user in users]
+
+    return sorted(user_list, key=(lambda user: user['points']), reverse=True)
+
 
 
 
 # Public route that shows total # correct / attempted for each user
-@app.route("/all-scores")
-def all_scores():
-    pg = ProblemGenerator()
-    questions = db.session.execute(db.select(Question)).scalars().all()
-    scores = {}
-    for q in questions:
-        user = q.quiz.user.username
-        correct = pg.checkAnswer(q.answer, q.response)
-        scores[user] = scores.get(user, {})
-        scores[user]['attempted'] = scores[user].get('attempted', 0) + 1
-        if correct:
-            scores[user]['correct'] = scores[user].get('correct', 0) + 1
-    return scores
+# @app.route("/all-scores")
+# def all_scores():
+#     pg = ProblemGenerator()
+#     questions = db.session.execute(db.select(Question)).scalars().all()
+#     scores = {}
+#     for q in questions:
+#         user = q.quiz.user.username
+#         correct = pg.checkAnswer(q.answer, q.response)
+#         scores[user] = scores.get(user, {})
+#         scores[user]['attempted'] = scores[user].get('attempted', 0) + 1
+#         if correct:
+#             scores[user]['correct'] = scores[user].get('correct', 0) + 1
+    
+#     return scores
 
 
     # num_correct = {}
@@ -181,7 +211,5 @@ def all_scores():
     #     if correct:
     #         num_correct[user] = num_correct.get(user, 0) + 1
     # return { 'numAttempted': num_attempted, 'numCorrect': num_correct}
-
-# Private route that shows the results of each session the current user has had
 
 

@@ -36,8 +36,6 @@ class User(db.Model):
         return {
             "id" : self.id,
             "username" : self.username,
-            "password" : self.password,
-            "token" : self.token,
             "points" : self.points,
             "quizzes" : [s.to_dict() for s in self.quizzes]
         }
@@ -63,6 +61,8 @@ class Quiz(db.Model):
     category = db.Column(db.Integer, nullable=False)
     quiz_style = db.Column(db.String)
     total_questions = db.Column(db.Integer)
+    total_correct = db.Column(db.Integer)
+    total_attempted = db.Column(db.Integer)
     score = db.Column(db.Numeric)
 
 
@@ -85,6 +85,8 @@ class Quiz(db.Model):
             "category" : self.category,
             "quizStyle" : self.quiz_style,
             "totalQuestions" : self.total_questions,
+            "totalCorrect" : self.total_correct,
+            "totalAttempted" : self.total_attempted,
             "score" : self.score,
             "userId" : self.user_id,
             "user" : self.user.username
