@@ -96,7 +96,7 @@ def quiz_submit():
     if not current_user.points:
         current_user.points = quiz_score
     else:
-        current_user.points = math.round(float(current_user.points) + quiz_score,2)
+        current_user.points = round(float(current_user.points) + quiz_score,2)
     current_user.save()
     return {"quiz" : new_quiz.to_dict(), "questions" : qs}, 200
 
@@ -165,51 +165,10 @@ def my_scores():
     current_user = token_auth.current_user()
     return [[quiz.to_dict(), [question.to_dict() for question in quiz.questions]] for quiz in current_user.quizzes]
 
-# @app.route("/highscores2")
-# def high_scores():
-#     most_points = db.session.execute(db.select(User).order_by(User.points.desc())).scalars().all()
-#     return [{'id' : user.id, 'points' : user.points, 'username': user.username} for user in most_points if user.points]
-
-# @app.route("/most-quizzes")
-# def most_quizzes():
-#     users = db.session.execute(db.select(User).where(User.points != None)).scalars().all()
-#     return sorted([user.to_dict() for user in users], key=(lambda n: len(n['quizzes'])), reverse=True)
 
 @app.route("/highscores")
 def most_correct():
-    users = db.session.execute(db.select(User).where(User.points != None)).scalars().all()
+    users = db.session.execute(db.select(User).where(User.points > 0)).scalars().all()
     user_list = [{'user':user.username, 'totalCorrect': sum([quiz.total_correct or 0 for quiz in user.quizzes]), 'totalQuestions': sum([quiz.total_questions or 0 for quiz in user.quizzes]), 'totalAttempted': sum([quiz.total_attempted or 0 for quiz in user.quizzes]), 'numQuizzes': len(user.quizzes), 'points': user.points} for user in users]
 
     return sorted(user_list, key=(lambda user: user['points']), reverse=True)
-
-
-
-
-# Public route that shows total # correct / attempted for each user
-# @app.route("/all-scores")
-# def all_scores():
-#     pg = ProblemGenerator()
-#     questions = db.session.execute(db.select(Question)).scalars().all()
-#     scores = {}
-#     for q in questions:
-#         user = q.quiz.user.username
-#         correct = pg.checkAnswer(q.answer, q.response)
-#         scores[user] = scores.get(user, {})
-#         scores[user]['attempted'] = scores[user].get('attempted', 0) + 1
-#         if correct:
-#             scores[user]['correct'] = scores[user].get('correct', 0) + 1
-    
-#     return scores
-
-
-    # num_correct = {}
-    # num_attempted = {}
-    # for q in questions:
-    #     user = q.quiz.user.username
-    #     correct = pg.checkAnswer(q.answer, q.response)
-    #     num_attempted[user] = num_attempted.get(user, 0) + 1
-    #     if correct:
-    #         num_correct[user] = num_correct.get(user, 0) + 1
-    # return { 'numAttempted': num_attempted, 'numCorrect': num_correct}
-
-

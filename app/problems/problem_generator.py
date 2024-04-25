@@ -18,7 +18,7 @@ class ProblemGenerator:
 
     # PLACEHOLDER FOR NOW. WILL DIVERSITY QUESTION TYPES LATER
     def new_problem(self, category):
-        if category in {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}:
+        if category in {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}:
             match category:
                 case 1 | 2 | 3:
                     return self.addndigit(category)
@@ -26,12 +26,14 @@ class ProblemGenerator:
                     return self.subndigit(category-3)
                 case 7:
                     return self.mult12()
-                case 8:
-                    return self.div12()
                 case 9:
+                    return self.div12()
+                case 8:
                     return self.multndigit(2)
                 case 10:
                     return self.divnfrac(2)
+                case 11:
+                    return self.arithmeticseq()
                 
         return self.addndigit(category)
 
@@ -106,6 +108,15 @@ class ProblemGenerator:
             "value" : 0.45 * n
         }
     
+    def arithmeticseq(self):
+        a = random.randint(-20, 20)
+        step = random.randint(-10, 10)
+
+        return {
+            "prompt" : f"{a} , {a+step} , {a + 2*step} , ",
+            "answer" : f"{a + 3*step}",
+            "value" : 0.4
+        }
 
     
 
