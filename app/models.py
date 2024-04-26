@@ -38,10 +38,8 @@ class User(db.Model):
     def edit(self, new_username, plaintext_password, message, clan):
         if new_username != '':
             self.username = new_username
-        if message != '':
-            self.message = message
-        if clan != '':
-            self.clan = clan
+        self.message = message
+        self.clan = clan
         if plaintext_password != '':
             self.set_password(plaintext_password)
         self.save()
