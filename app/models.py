@@ -10,6 +10,9 @@ class User(db.Model):
     username = db.Column(db.String, nullable=False, unique=True)
     password = db.Column(db.String, nullable=False)
     points = db.Column(db.Numeric)
+    message = db.Column(db.String)
+    clan = db.Column(db.String)
+
 
     token = db.Column(db.String, index=True, unique=True)
     token_expiration = db.Column(db.DateTime(timezone=True))
@@ -31,6 +34,17 @@ class User(db.Model):
     
     def check_password(self, plaintext_password):
         return check_password_hash(self.password, plaintext_password)
+    
+    def edit(self, new_username, plaintext_password, message, clan):
+        if new_username != '':
+            self.username = new_username
+        if message != '':
+            self.message = message
+        if clan != '':
+            self.clan = clan
+        if plaintext_password != '':
+            self.set_password(plaintext_password)
+        self.save()
     
     def to_dict(self):
         return {

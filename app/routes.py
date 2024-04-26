@@ -1,6 +1,8 @@
 import math
+import random
 from flask import request, render_template
 from flask_cors import cross_origin
+from flask_migrate import current
 from app.problems.problem_generator import ProblemGenerator
 from . import app, db
 from .models import User, Quiz, Question
@@ -8,10 +10,10 @@ from .auth import basic_auth, token_auth
 
 ## BASIC ROUTES TO TEST PROBLEM GENERATION
 
-@app.route("/")
+@app.route("/random")
 def index():
     gen = ProblemGenerator()
-    return gen.mult12()
+    return gen.new_problem(random.randint(1, ProblemGenerator.max_category))
 
 
 @app.route("/practice/mult")
@@ -101,7 +103,7 @@ def quiz_submit():
     return {"quiz" : new_quiz.to_dict(), "questions" : qs}, 200
 
 
-## LOGIN / SIGNUP ROUTES
+## LOGIN / SIGNUP / USER ROUTES
 
 @app.route("/signup", methods=["POST"])
 def signup():
@@ -119,7 +121,7 @@ def signup():
     username = data.get("username")
     password = data.get("password")
 
-    new_user = User(username=username, password=password, points=0)
+    new_user = User(username=username, password=password, points=0, message='', clan='')
     return new_user.to_dict(), 201
 
 
@@ -129,6 +131,38 @@ def login():
     user = basic_auth.current_user()
     return user.get_token()
 
+
+@app.route("/user/me")
+@token_auth.login_required
+def get_me():
+    current_user = token_auth.current_user()
+    return current_user.to_dict()
+
+# This route is used to edit the user's key information including username, password, and current quote
+@app.route("/user/edit", methods=["POST"])
+@token_auth.login_required
+def edit_user():
+    current_user = token_auth.current_user()
+    if not request.is_json:
+        return {'error': 'Content must be a JSON'}, 400
+    data = request.json
+    required_fields = {"password"}
+    missing = []
+    for field in required_fields:
+        if field not in data:
+            missing.append(field)
+    if missing:
+        return {"error" : f"Fields {', '.join(missing)} must be in the request"}, 400
+    if not current_user.check_password(data.get('password')):
+        return {"error" : f"Incorrect password. Unable to update profile."}, 400
+
+    new_username = data.get('newUsername', '')
+    new_password = data.get('newPassword', '')
+    new_message = data.get('message', '')
+    new_clan = data.get('clan', '')
+
+    current_user.edit(new_username, new_password, new_message, new_clan)
+    return current_user.to_dict()
 
 
 
@@ -163,12 +197,40 @@ def questions_graded():
 @token_auth.login_required
 def my_scores():
     current_user = token_auth.current_user()
-    return [[quiz.to_dict(), [question.to_dict() for question in quiz.questions]] for quiz in current_user.quizzes]
+    my_stats = {
+        'user':current_user.username, 
+        'totalCorrect': sum([quiz.total_correct or 0 for quiz in current_user.quizzes]), 
+        'totalQuestions': sum([quiz.total_questions or 0 for quiz in current_user.quizzes]), 
+        'totalAttempted': sum([quiz.total_attempted or 0 for quiz in current_user.quizzes]), 
+        'numQuizzes': len(current_user.quizzes), 
+        'points': current_user.points,
+        'lastQuiz': {},
+        'message' : '',
+        'clan': ''
+        }
+    if len(current_user.quizzes) > 0:
+        my_stats['lastQuiz'] = current_user.quizzes[-1].to_dict()
+    if current_user.message:
+        my_stats['message'] = current_user.message
+    if current_user.clan:
+        my_stats['clan'] = current_user.clan
+    return my_stats, 200
 
-
+# Global highscores
 @app.route("/highscores")
 def most_correct():
     users = db.session.execute(db.select(User).where(User.points > 0)).scalars().all()
-    user_list = [{'user':user.username, 'totalCorrect': sum([quiz.total_correct or 0 for quiz in user.quizzes]), 'totalQuestions': sum([quiz.total_questions or 0 for quiz in user.quizzes]), 'totalAttempted': sum([quiz.total_attempted or 0 for quiz in user.quizzes]), 'numQuizzes': len(user.quizzes), 'points': user.points} for user in users]
+    user_list = [{'user':user.username, 'message':user.message, 'clan':user.clan, 'totalCorrect': sum([quiz.total_correct or 0 for quiz in user.quizzes]), 'totalQuestions': sum([quiz.total_questions or 0 for quiz in user.quizzes]), 'totalAttempted': sum([quiz.total_attempted or 0 for quiz in user.quizzes]), 'numQuizzes': len(user.quizzes), 'points': user.points} for user in users]
+
+    return sorted(user_list, key=(lambda user: user['points']), reverse=True)
+
+# Highscores but limited to your clan
+@app.route("/highscores/clan")
+@token_auth.login_required
+def clan_highscores():
+    current_user = token_auth.current_user()
+    current_clan = current_user.clan
+    users = db.session.execute(db.select(User).where(User.clan == current_clan)).scalars().all()
+    user_list = [{'user':user.username, 'message':user.message, 'clan':user.clan, 'totalCorrect': sum([quiz.total_correct or 0 for quiz in user.quizzes]), 'totalQuestions': sum([quiz.total_questions or 0 for quiz in user.quizzes]), 'totalAttempted': sum([quiz.total_attempted or 0 for quiz in user.quizzes]), 'numQuizzes': len(user.quizzes), 'points': user.points} for user in users]
 
     return sorted(user_list, key=(lambda user: user['points']), reverse=True)

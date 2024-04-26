@@ -3,6 +3,7 @@ from fractions import Fraction
 import re
 
 class ProblemGenerator:
+    max_category = 11
     def __init__(self, difficulty=1) -> None:
         self.difficulty = difficulty
 
@@ -26,10 +27,10 @@ class ProblemGenerator:
                     return self.subndigit(category-3)
                 case 7:
                     return self.mult12()
-                case 9:
-                    return self.div12()
                 case 8:
                     return self.multndigit(2)
+                case 9:
+                    return self.div12()
                 case 10:
                     return self.divnfrac(2)
                 case 11:
