@@ -156,7 +156,7 @@ def edit_user():
     if not current_user.check_password(data.get('password')):
         return {"error" : f"Incorrect password. Unable to update profile."}, 400
 
-    new_username = data.get('newUsername', '')
+    new_username = data.get('username', '')
     new_password = data.get('newPassword', '')
     new_message = data.get('message', '')
     new_clan = data.get('clan', '')
