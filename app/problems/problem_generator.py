@@ -120,27 +120,5 @@ class ProblemGenerator:
         }
 
     
-
-
-
-
 if __name__ == "__main__":
-    gen = ProblemGenerator()
-    # print(gen.mult12())
-    # print(gen.mult12())
-    # print(gen.mult12())
-    # print(gen.add1())
-    # print(gen.add1())
-    # print(gen.add1())
-    # print(gen.addndigit(3))
-    # print(gen.addndigit(3))
-    # print(gen.addndigit(5))
-    print(gen.checkAnswer(3 , '3')) # true
-    print(gen.checkAnswer(245 , '490/2')) #false NOT SIMPLIFIED
-    print(gen.checkAnswer(0.5 , '1/2')) # true
-    print(gen.checkAnswer(2.5 , '2.5')) # true
-    print(gen.checkAnswer(2.5 , '5/2')) # true
-    print(gen.checkAnswer(2.5 , '10/4')) # false
-    print(gen.checkAnswer(3.333 , '3.33')) # true
-    print(gen.checkAnswer(3.333 , '10/3')) # true
-    print(gen.checkAnswer(3 , '3'))
+    pass
