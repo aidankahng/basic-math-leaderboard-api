@@ -2,7 +2,7 @@
 
 Math problem API created in Python using Flask, SQL Alchemy, and a PostgreSQL database. Webservice and database are hosted on Render.
 
-### Public Routes:
+### Public Routes (No auth needed):
 #### [GET] /random
 Example JSON Data:
 ```
@@ -13,13 +13,12 @@ Example JSON Data:
 }
 ```
 #### [GET] /practice/mult
-Webpage with single practice problem of the form "a x b = " 
+HTML webpage with single practice problem of the form "a x b = " 
 #### [GET] /practice/add
-Webpage with single practice problem of the form "a + b = "
+HTML webpage with single practice problem of the form "a + b = "
 #### [GET] /questions
 List of all questions answered so far as a JSON
-#### [GET] /questions/graded
-UNUSED: Shows the correctness of each question answered as a JSON
+Example: TBD
 #### [GET] /highscores
 JSON List of users ordered by total points accumulated
 Example JSON Data:
@@ -48,3 +47,7 @@ Example JSON Data:
 ]
 ```
 #### [POST] /sign-up
+TBD
+
+### Protected Routes:
+#### TBD
